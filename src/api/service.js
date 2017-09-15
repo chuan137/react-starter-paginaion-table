@@ -1,16 +1,24 @@
 import data from './mock_data.json';
 
+const pageSize = 100;
+
 const length = data.length;
 
 const service = {
-  fetch(bsize = 20, page = 1) {
-    const start = bsize * page;
-    const end = start + bsize;
-    if (start < 0 || start > length) {
+  fetch(page) {
+    if (page < 0 || page >= Math.ceil(length / pageSize)) {
       return Promise.reject('Range is not correct');
     }
-    return Promise.resolve(data.slice(start, end));
+
+    const start = page * pageSize;
+    const end = start + pageSize;
+
+    return Promise.resolve({
+      total: length,
+      data: data.slice(start, end),
+    });
   },
 };
 
+export { pageSize };
 export default service;

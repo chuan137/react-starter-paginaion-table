@@ -12,13 +12,13 @@ function DataList({ fields, data }) {
       <Table>
         <thead>
           <tr className="table-header">
-            <th>#</th>
+            <th className="text-center">#</th>
             {fields.map(field =>
-              (<th key={field.id}>
+              (<th key={field.id} className="text-center">
                 {field.label}
               </th>),
             )}
-            <th>Actions</th>
+            <th className="text-center">Actions</th>
           </tr>
         </thead>
 
@@ -27,7 +27,7 @@ function DataList({ fields, data }) {
             data.map((item, vIndex) =>
               (<tr key={item.id} className={classNames({ darkline: vIndex % 2 === 0 })}>
                 <th scope="row">
-                  {vIndex + 1}
+                  {item.id || vIndex + 1}
                 </th>
                 {fields.map(field =>
                   (<td key={field.id}>
