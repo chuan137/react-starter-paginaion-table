@@ -1,16 +1,25 @@
-import { takeEvery, put } from 'redux-saga/effects';
-import { fetch, getTotal } from '../routines';
+import { takeEvery, put, select } from 'redux-saga/effects';
+import { fetch } from '../routines';
 import api from '../../api/service';
+import { isPageFetched } from '../selectors';
 
 function* fetchDataFlow(action) {
-  const table = action.payload.table ? action.payload.table : null;
   // const params = action.payload.params ? action.payload.params : {};
+  let table;
+  let page;
   try {
-    yield put(Object.assign({}, fetch.request(), { meta: { table } }));
-    const totalItems = yield api.getTotal();
-    yield put(Object.assign({}, getTotal.success(totalItems), { meta: { table } }));
-    const response = yield api.fetch();
-    yield put(Object.assign({}, fetch.success(response), { meta: { table } }));
+    table = action.payload.table ? action.payload.table : null;
+    page = action.payload.page ? action.payload.page : 0;
+
+    if (!table) { throw new Error('Table name missing'); }
+
+    const isFetched = yield select(isPageFetched, table, page);
+
+    if (!isFetched) {
+      yield put(Object.assign({}, fetch.request(), { meta: { table } }));
+      const response = yield api.fetch(page);
+      yield put(Object.assign({}, fetch.success(response), { meta: { table, page } }));
+    }
   } catch (error) {
     yield put(Object.assign({}, fetch.failure(error), { meta: { table } }));
   } finally {

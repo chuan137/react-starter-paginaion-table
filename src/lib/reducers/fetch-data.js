@@ -1,20 +1,22 @@
 import dotProp from 'dot-prop-immutable';
-import { getTableName } from './helper';
+import { getTableName, getPage } from './helper';
 
 export function onFetchRequest(state, action) {
   const table = getTableName(action);
-  return dotProp.set(state, `${table}.isLoadingData`, true);
+  return dotProp.set(state, `${table}.isFetching`, true);
 }
 
 export function onFetchFullfil(state, action) {
   const table = getTableName(action);
-  return dotProp.set(state, `${table}.isLoadingData`, false);
+  return dotProp.set(state, `${table}.isFetching`, false);
 }
 
 export function onFetchSuccess(state, action) {
   const table = getTableName(action);
-  const items = action.payload;
-  const itemId = items.map(item => item.id);
+  const page = getPage(action);
+  const total = action.payload.total;
+  const items = action.payload.data;
+  const itemIds = items.map(item => item.id);
 
   const newItems = {};
   items.forEach((item) => {
@@ -22,19 +24,25 @@ export function onFetchSuccess(state, action) {
     return newItems;
   });
 
-  const updateById = dotProp.set(
+  const updateTotal = dotProp.set(
     state,
-    `${table}.data.byId`,
-    data => Object.assign({}, data, newItems),
+    `${table}.total`,
+    total,
+  );
+
+  const updateIds = dotProp.set(
+    updateTotal,
+    `${table}.pages.${page}.ids`,
+    itemIds,
   );
 
   return dotProp.set(
-    updateById,
-    `${table}.data.allIds`,
-    (allIds) => {
-      if (!Array.isArray(allIds)) { return itemId; }
-      return allIds.concat(itemId);
-    },
+    updateIds,
+    `${table}.pages.${page}.items`,
+    items.reduce((obj, item) => {
+      obj[item.id] = item;
+      return obj;
+    }, {}),
   );
 }
 
