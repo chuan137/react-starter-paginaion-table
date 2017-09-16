@@ -14,16 +14,16 @@ export default function (endpoint, storeKey) {
   const _fetch = createRoutine(`@@DATA/FETCH_${storeKey}`);
   const _reset = createRoutine(`@@DATA/RESET_${storeKey}`);
 
-  function* fetchFlow(action, isPageFetchedSelector) {
+  function* fetchFlow(isPageFetchedSelector, action) {
     try {
       let response;
-      const page = _.get(action, 'playload.page', 0);
+      const page = _.get(action, 'payload.page', 0);
       const fetched = yield select(isPageFetchedSelector, page);
 
       if (!fetched) {
         yield put(_fetch.request());
         response = yield service.fetch(page);
-        yield put(_fetch.success({ response, page }));
+        yield put(_fetch.success({ ...response, page }));
       }
     } catch (error) {
       yield put(_fetch.failure());
@@ -33,11 +33,15 @@ export default function (endpoint, storeKey) {
   }
 
   function onFetchRequest(state) {
-    return dotProp.set(state, `${storeKey}.isFetching`, true);
+    return dotProp.set(state, 'isFetching', true);
   }
 
-  function onFetchFullfil(state) {
-    return dotProp.set(state, `${storeKey}.isFetching`, false);
+  function onFetchFulfill(state) {
+    return dotProp.set(state, 'isFetching', false);
+  }
+
+  function onFetchFailure(state, action) {
+    return dotProp.set(state, 'error', action.error);
   }
 
   function onFetchSuccess(state, action) {
@@ -49,15 +53,10 @@ export default function (endpoint, storeKey) {
       return obj;
     }, {});
 
-    const updateTotal = dotProp.set(state, `${storeKey}.total`, total);
-    const updateIds = dotProp.set(updateTotal, `${storeKey}.pages.${page}.ids`, ids);
-    return dotProp.set(updateIds, `${storeKey}.pages.${page}.byId`, items);
+    const updateTotal = dotProp.set(state, 'total', total);
+    const updateIds = dotProp.set(updateTotal, `pages.${page}.ids`, ids);
+    return dotProp.set(updateIds, `pages.${page}.byId`, items);
   }
-
-  function onFetchFailure(state, action) {
-    return dotProp.set(state, '{storeKey}.error', action.error);
-  }
-
 
   const initState = {
     isFetching: false,
@@ -67,16 +66,18 @@ export default function (endpoint, storeKey) {
     error: null,
   };
 
-  const reducer = createReducer(initState, {
-    [_fetch.REQUEST]: onFetchRequest,
-    [_fetch.SUCCESS]: onFetchSuccess,
-    [_fetch.FAILURE]: onFetchFailure,
-    [_fetch.FULFILL]: onFetchFullfil,
-  });
+  const reducer = {
+    [storeKey]: createReducer(initState, {
+      [_fetch.REQUEST]: onFetchRequest,
+      [_fetch.SUCCESS]: onFetchSuccess,
+      [_fetch.FAILURE]: onFetchFailure,
+      [_fetch.FULFILL]: onFetchFulfill,
+    }),
+  };
 
   const selectors = {
     isPageFetched(state, page) {
-      return Object.keys(_.get(state, `${storeKey}.pages.${page}`, {})).length === 0;
+      return Object.keys(_.get(state, `${storeKey}.pages.${page}`, {})).length > 0;
     },
     isFetching(state) {
       return _.get(state, `${storeKey}.isFetching`, undefined);
@@ -84,9 +85,12 @@ export default function (endpoint, storeKey) {
     getTotal(state) {
       return _.get(state, `${storeKey}.total`, undefined);
     },
+    getPageSize(state) {
+      return _.get(state, `${storeKey}.pageSize`);
+    },
     getData(state, start, end) {
-      const { pageSize } = state;
-      const pages = _.get(state, '{storeKey}.pages');
+      const pages = _.get(state, `${storeKey}.pages`, {});
+      const pageSize = _.get(state, `${storeKey}.pageSize`);
 
       if (Object.keys(pages).length > 0) {
         let items = [];
@@ -104,15 +108,16 @@ export default function (endpoint, storeKey) {
 
       return [];
     },
-
   };
 
   const sagas = [
     takeEvery(_fetch.TRIGGER, fetchFlow, selectors.isPageFetched),
   ];
 
-  const fetch = dispatch => dispatch(_fetch.trigger());
-  const reset = dispatch => dispatch(_reset.trigger());
+  // const fetch = dispatch => dispatch(_fetch.trigger());
+  // const reset = dispatch => dispatch(_reset.trigger());
+  const fetch = _fetch.trigger;
+  const reset = _reset.trigger;
 
   return {
     fetch,
