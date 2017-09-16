@@ -1,6 +1,7 @@
 /* eslint-disable  no-underscore-dangle */
 import { createRoutine } from 'redux-saga-routines';
 import { createReducer } from 'redux-create-reducer';
+import { createSelector } from 'reselect';
 import { takeEvery, put, select } from 'redux-saga/effects';
 import dotProp from 'dot-prop-immutable';
 import _ from 'lodash';
@@ -54,15 +55,17 @@ export default function (endpoint, storeKey) {
     }, {});
 
     const updateTotal = dotProp.set(state, 'total', total);
-    const updateIds = dotProp.set(updateTotal, `pages.${page}.ids`, ids);
-    return dotProp.set(updateIds, `pages.${page}.byId`, items);
+    const updateIds = dotProp.set(updateTotal, `data.${page}.ids`, ids);
+    return dotProp.set(updateIds, `data.${page}.byId`, items);
   }
 
   const initState = {
     isFetching: false,
+    filtered: false,
     pageSize: 100,
     total: 0,
-    pages: {},
+    data: {},
+    dataf: {},
     error: null,
   };
 
@@ -77,7 +80,7 @@ export default function (endpoint, storeKey) {
 
   const selectors = {
     isPageFetched(state, page) {
-      return Object.keys(_.get(state, `${storeKey}.pages.${page}`, {})).length > 0;
+      return Object.keys(_.get(state, `${storeKey}.data.${page}`, {})).length > 0;
     },
     isFetching(state) {
       return _.get(state, `${storeKey}.isFetching`, undefined);
@@ -88,34 +91,43 @@ export default function (endpoint, storeKey) {
     getPageSize(state) {
       return _.get(state, `${storeKey}.pageSize`);
     },
-    getData(state, start, end) {
-      const pages = _.get(state, `${storeKey}.pages`, {});
-      const pageSize = _.get(state, `${storeKey}.pageSize`);
-
-      if (Object.keys(pages).length > 0) {
-        let items = [];
-        const startPage = Math.floor(start / pageSize);
-        const endPage = Math.ceil(end / pageSize) - 1;
-        for (let i = startPage; i <= endPage; i += 1) {
-          const l = (i === startPage) ? start % pageSize : 0;
-          const r = (i === endPage) ? ((end - 1) % pageSize) + 1 : pageSize;
-          items = items.concat(
-            _.get(state, `${storeKey}.pages.${i}.ids`, []).slice(l, r).map(id =>
-              _.get(state, `${storeKey}.pages.${i}.byId.${id}`), []));
-        }
-        return items;
-      }
-
-      return [];
+    getAllPages(state) {
+      return (_.get(state, `${storeKey}.filtered`)
+        ? _.get(state, `${storeKey}.dataf`)
+        : _.get(state, `${storeKey}.data`));
     },
   };
+
+  selectors.getData = createSelector([
+    selectors.getAllPages,
+    selectors.getPageSize,
+    (state, props) => props,
+  ], (pages, pageSize, props) => {
+    let data = [];
+
+    if (Object.keys(pages).length > 0) {
+      const start = props.page * props.pageSize;
+      const end = start + props.pageSize;
+      const startPage = Math.floor(start / pageSize);
+      const endPage = Math.ceil(end / pageSize) - 1;
+
+      for (let i = startPage; i <= endPage; i += 1) {
+        const l = (i === startPage) ? start % pageSize : 0;
+        const r = (i === endPage) ? ((end - 1) % pageSize) + 1 : pageSize;
+        // console.log(l, r);
+        data = data.concat(
+          _.get(pages[i], 'ids', []).slice(l, r).map(id =>
+            _.get(pages[i], `byId.${id}`, [])));
+      }
+    }
+
+    return data;
+  });
 
   const sagas = [
     takeEvery(_fetch.TRIGGER, fetchFlow, selectors.isPageFetched),
   ];
 
-  // const fetch = dispatch => dispatch(_fetch.trigger());
-  // const reset = dispatch => dispatch(_reset.trigger());
   const fetch = _fetch.trigger;
   const reset = _reset.trigger;
 
