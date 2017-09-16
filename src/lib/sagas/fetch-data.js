@@ -3,6 +3,8 @@ import { fetch } from '../routines';
 import api from '../../api/service';
 import { isPageFetched } from '../selectors';
 
+const service = api();
+
 function* fetchDataFlow(action) {
   // const params = action.payload.params ? action.payload.params : {};
   let table;
@@ -17,7 +19,7 @@ function* fetchDataFlow(action) {
 
     if (!isFetched) {
       yield put(Object.assign({}, fetch.request(), { meta: { table } }));
-      const response = yield api.fetch(page);
+      const response = yield service.fetch(page);
       yield put(Object.assign({}, fetch.success(response), { meta: { table, page } }));
     }
   } catch (error) {
