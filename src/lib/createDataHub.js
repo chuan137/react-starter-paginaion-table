@@ -12,18 +12,29 @@ import api from '../api/service';
 export default function (endpoint, storeKey) {
   const service = api(endpoint);
 
-  const _fetch = createRoutine(`@@DATA/FETCH_${storeKey}`);
-  const _reset = createRoutine(`@@DATA/RESET_${storeKey}`);
+  const storeKeyUpperCase = storeKey.toUpperCase();
+  const _fetch = createRoutine(`@@DATA/FETCH_${storeKeyUpperCase}`);
+  const _reset = createRoutine(`@@DATA/RESET_${storeKeyUpperCase}`);
 
-  function* fetchFlow(isPageFetchedSelector, action) {
+  const CLEAR_DATA = `@@DATA/CLEAR_DATA_${storeKeyUpperCase}`;
+
+  const SET_FILTER = `@@DATA/SET_FILTER_${storeKeyUpperCase}`;
+  const SET_FILTER_TRIGGER = `@@DATA/SET_FILTER_${storeKeyUpperCase}_TRIGGER`;
+  const setFilter = filter => ({
+    type: SET_FILTER_TRIGGER,
+    payload: filter,
+  });
+
+  function* fetchFlow(isPageFetchedSelector, filterSelector, action) {
     try {
       let response;
       const page = _.get(action, 'payload.page', 0);
+      const filter = yield select(filterSelector);
       const fetched = yield select(isPageFetchedSelector, page);
 
       if (!fetched) {
         yield put(_fetch.request());
-        response = yield service.fetch(page);
+        response = yield service.fetch(page, filter);
         yield put(_fetch.success({ ...response, page }));
       }
     } catch (error) {
@@ -31,6 +42,12 @@ export default function (endpoint, storeKey) {
     } finally {
       yield put(_fetch.fulfill());
     }
+  }
+
+  function* setFilterFlow(action) {
+    yield put({ type: CLEAR_DATA });
+    yield put({ type: SET_FILTER, payload: action.payload });
+    yield put(_fetch.trigger());
   }
 
   function onFetchRequest(state) {
@@ -59,22 +76,31 @@ export default function (endpoint, storeKey) {
     return dotProp.set(updateIds, `data.${page}.byId`, items);
   }
 
+  function onSetFilter(state, action) {
+    return dotProp.set(state, 'filter', action.payload);
+  }
+
+  function onClearData(state) {
+    return dotProp.set(state, 'data', {});
+  }
+
+
   const initState = {
     isFetching: false,
-    filtered: false,
+    filter: null,
     pageSize: 100,
     total: 0,
     data: {},
-    dataf: {},
     error: null,
   };
-
   const reducer = {
     [storeKey]: createReducer(initState, {
       [_fetch.REQUEST]: onFetchRequest,
       [_fetch.SUCCESS]: onFetchSuccess,
       [_fetch.FAILURE]: onFetchFailure,
       [_fetch.FULFILL]: onFetchFulfill,
+      [SET_FILTER]: onSetFilter,
+      [CLEAR_DATA]: onClearData,
     }),
   };
 
@@ -92,9 +118,10 @@ export default function (endpoint, storeKey) {
       return _.get(state, `${storeKey}.pageSize`);
     },
     getAllPages(state) {
-      return (_.get(state, `${storeKey}.filtered`)
-        ? _.get(state, `${storeKey}.dataf`)
-        : _.get(state, `${storeKey}.data`));
+      return _.get(state, `${storeKey}.data`);
+    },
+    getFilter(state) {
+      return _.get(state, `${storeKey}.filter`);
     },
   };
 
@@ -125,7 +152,8 @@ export default function (endpoint, storeKey) {
   });
 
   const sagas = [
-    takeEvery(_fetch.TRIGGER, fetchFlow, selectors.isPageFetched),
+    takeEvery(_fetch.TRIGGER, fetchFlow, selectors.isPageFetched, selectors.getFilter),
+    takeEvery(SET_FILTER_TRIGGER, setFilterFlow),
   ];
 
   const fetch = _fetch.trigger;
@@ -134,6 +162,7 @@ export default function (endpoint, storeKey) {
   return {
     fetch,
     reset,
+    setFilter,
     sagas,
     reducer,
     selectors,

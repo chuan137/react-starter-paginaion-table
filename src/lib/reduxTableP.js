@@ -17,7 +17,7 @@ export default dataHub =>
       constructor(props) {
         super(props);
         this.chagePage = this.chagePage.bind(this);
-        this.state = { page: 0, pageSize: 11 };
+        this.state = { page: 0, pageSize: 20 };
       }
 
       componentWillMount() {
@@ -52,5 +52,6 @@ export default dataHub =>
       cachePageSize: dataHub.selectors.getPageSize(state),
     }), dispatch => ({
       fetchData: page => dispatch(dataHub.fetch({ page })),
+      setFilter: filter => dispatch(dataHub.setFilter(filter)),
     }))(HocComponent);
   };
