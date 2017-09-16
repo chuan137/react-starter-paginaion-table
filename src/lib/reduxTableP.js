@@ -25,7 +25,7 @@ export default () =>
           page: 0,
           pageSize: 15,
         };
-        this.onChagePage = this.onChagePage.bind(this);
+        this.chagePage = this.chagePage.bind(this);
       }
 
       componentWillMount() {
