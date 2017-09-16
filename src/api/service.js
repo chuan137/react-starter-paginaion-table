@@ -4,7 +4,7 @@ const pageSize = 100;
 
 const length = data.length;
 
-const service = {
+const service = endpoint => ({
   fetch(page) {
     if (page < 0 || page >= Math.ceil(length / pageSize)) {
       return Promise.reject('Range is not correct');
@@ -18,7 +18,7 @@ const service = {
       data: data.slice(start, end),
     });
   },
-};
+});
 
 export { pageSize };
 export default service;
