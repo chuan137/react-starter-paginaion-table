@@ -5,6 +5,7 @@ import { fieldPropTypes } from './propTypes';
 import Pagination from './Pagination';
 import DataList from './DataList';
 import reduxTable from '../lib/reduxTableP';
+import { userHub } from '../store';
 
 export class DataTable extends Component {
   render() {
@@ -33,5 +34,4 @@ DataTable.propTypes = {
   onClickPage: PropTypes.func.isRequired,
 };
 
-
-export default reduxTable({ table: 'mytable' })(DataTable);
+export default reduxTable(userHub)(DataTable);

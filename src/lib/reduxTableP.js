@@ -1,10 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
-import { userHub } from '../store';
 
-
-export default () =>
+export default dataHub =>
   (WrappedComponent) => {
     const InnerHocComponent = props => <WrappedComponent {...props} />;
 
@@ -12,9 +10,9 @@ export default () =>
       const start = ownProps.page * ownProps.pageSize;
       const end = start + ownProps.pageSize;
       return ({
-        data: userHub.selectors.getData(state, start, end),
-        total: userHub.selectors.getTotal(state),
-        isFetching: userHub.selectors.isFetching(state),
+        data: dataHub.selectors.getData(state, start, end),
+        total: dataHub.selectors.getTotal(state),
+        isFetching: dataHub.selectors.isFetching(state),
       });
     })(InnerHocComponent);
 
@@ -41,11 +39,13 @@ export default () =>
       }
 
       render() {
+        const { cachePageSize, fetchUser, ...restProps } = this.props;
+
         return (<ReduxTable
           page={this.state.page}
           pageSize={this.state.pageSize}
           onClickPage={this.chagePage}
-          {...this.props}
+          {...restProps}
         />);
       }
     }
@@ -56,9 +56,8 @@ export default () =>
     };
 
     return connect(state => ({
-      cachePageSize: userHub.selectors.getPageSize(state),
+      cachePageSize: dataHub.selectors.getPageSize(state),
     }), dispatch => ({
-      fetchUser: page => dispatch(userHub.fetch({ page })),
+      fetchUser: page => dispatch(dataHub.fetch({ page })),
     }))(HocComponent);
   };
-
