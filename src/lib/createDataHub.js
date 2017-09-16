@@ -87,7 +87,7 @@ export default function (endpoint, storeKey) {
 
   const initState = {
     isFetching: false,
-    filter: null,
+    filter: '',
     pageSize: 100,
     total: 0,
     data: {},

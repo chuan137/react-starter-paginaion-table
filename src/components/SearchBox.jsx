@@ -1,8 +1,16 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import { Input } from 'reactstrap';
+import { Input, InputGroup, InputGroupButton } from 'reactstrap';
 
 class SearchBox extends Component {
+  handleClick(e) {
+    // console.log('clear', this.input.value);
+    if (this.input.value) {
+      this.input.value = '';
+      this.props.reset();
+    }
+  }
+
   handleKeyPress(e) {
     if (e.key === 'Enter') {
       this.props.onSearch(e.target.value);
@@ -11,15 +19,18 @@ class SearchBox extends Component {
   }
 
   render() {
-    const { style, className } = this.props;
     return (
-      <div className={className} style={style}>
+      <InputGroup>
         <Input
           type="search"
           placeholder="Search"
           onKeyPress={e => this.handleKeyPress(e)}
+          getRef={(input) => { this.input = input; }}
         />
-      </div>
+        <InputGroupButton onClick={() => this.handleClick()}>
+          Clear
+        </InputGroupButton>
+      </InputGroup>
     );
   }
 }
@@ -31,8 +42,7 @@ SearchBox.defaultProps = {
 
 SearchBox.propTypes = {
   onSearch: PropTypes.func.isRequired,
-  className: PropTypes.string,
-  style: PropTypes.object,
+  reset: PropTypes.func.isRequired,
 };
 
 export default SearchBox;

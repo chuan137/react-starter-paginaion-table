@@ -21,11 +21,12 @@ export class DataTable extends Component {
   render() {
     return (
       <div style={{ padding: '2rem' }}>
-        <SearchBox
-          onSearch={v => this.props.setFilter(v)}
-          className="ml-auto"
-          style={styles.searchBox}
-        />
+        <div className="ml-auto" style={styles.searchBox}>
+          <SearchBox
+            onSearch={v => this.props.setFilter(v)}
+            reset={this.props.resetFilter}
+          />
+        </div>
         <DataList
           fields={this.props.fields}
           data={this.props.data}
@@ -51,6 +52,7 @@ DataTable.propTypes = {
   total: PropTypes.number.isRequired,
   onClickPage: PropTypes.func.isRequired,
   setFilter: PropTypes.func.isRequired,
+  resetFilter: PropTypes.func.isRequired,
 };
 
 export default reduxTable(userHub)(DataTable);

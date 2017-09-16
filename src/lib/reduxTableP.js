@@ -17,11 +17,17 @@ export default dataHub =>
       constructor(props) {
         super(props);
         this.chagePage = this.chagePage.bind(this);
+        this.setFilter = this.setFilter.bind(this);
         this.state = { page: 0, pageSize: 20 };
       }
 
       componentWillMount() {
         this.props.fetchData(0);
+      }
+
+      setFilter(v) {
+        this.setState({ page: 0 });
+        this.props.setFilter(v);
       }
 
       chagePage(p) {
@@ -33,11 +39,13 @@ export default dataHub =>
       }
 
       render() {
-        const restProps = _.omit(this.props, 'cachePageSize', 'fetchData');
+        const restProps = _.omit(this.props, 'cachePageSize', 'fetchData', 'setFilter');
         return (<ReduxTable
           page={this.state.page}
           pageSize={this.state.pageSize}
           onClickPage={this.chagePage}
+          setFilter={this.setFilter}
+          resetFilter={() => this.setFilter()}
           {...restProps}
         />);
       }
@@ -46,6 +54,7 @@ export default dataHub =>
     HocComponent.propTypes = {
       cachePageSize: PropTypes.number.isRequired,
       fetchData: PropTypes.func.isRequired,
+      setFilter: PropTypes.func.isRequired,
     };
 
     return connect(state => ({
@@ -53,5 +62,6 @@ export default dataHub =>
     }), dispatch => ({
       fetchData: page => dispatch(dataHub.fetch({ page })),
       setFilter: filter => dispatch(dataHub.setFilter(filter)),
+      // resetFilter: () => dispatch(dataHub.setFilter('')),
     }))(HocComponent);
   };
