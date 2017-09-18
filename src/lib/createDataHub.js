@@ -12,18 +12,23 @@ import api from '../api/service';
 export default function (endpoint, storeKey) {
   const service = api(endpoint);
 
-  const storeKeyUpperCase = storeKey.toUpperCase();
-  const _fetch = createRoutine(`@@DATA/FETCH_${storeKeyUpperCase}`);
-  const _reset = createRoutine(`@@DATA/RESET_${storeKeyUpperCase}`);
+  const fetchAll = createRoutine(`@@DATA/${storeKey.toUpperCase()}_FETCH_ALL`);
+  const clearAll = createRoutine(`@@DATA/${storeKey.toUpperCase()}_CLEAR_ALL`);
+  const setFilter = createRoutine(`@@DATA/${storeKey.toUpperCase()}_SET_FILTER`);
 
-  const CLEAR_DATA = `@@DATA/CLEAR_DATA_${storeKeyUpperCase}`;
 
-  const SET_FILTER = `@@DATA/SET_FILTER_${storeKeyUpperCase}`;
-  const SET_FILTER_TRIGGER = `@@DATA/SET_FILTER_${storeKeyUpperCase}_TRIGGER`;
-  const setFilter = filter => ({
-    type: SET_FILTER_TRIGGER,
-    payload: filter,
-  });
+  // const storeKeyUpperCase = storeKey.toUpperCase();
+  // const _fetch = createRoutine(`@@DATA/FETCH_${storeKeyUpperCase}`);
+  // const _reset = createRoutine(`@@DATA/RESET_${storeKeyUpperCase}`);
+
+  // const CLEAR_DATA = `@@DATA/CLEAR_DATA_${storeKeyUpperCase}`;
+
+  // const SET_FILTER = `@@DATA/SET_FILTER_${storeKeyUpperCase}`;
+  // const SET_FILTER_TRIGGER = `@@DATA/SET_FILTER_${storeKeyUpperCase}_TRIGGER`;
+  // // const setFilter = filter => ({
+  //   type: SET_FILTER_TRIGGER,
+  //   payload: filter,
+  // });
 
   function* fetchFlow(isPageFetchedSelector, filterSelector, action) {
     try {
@@ -162,7 +167,7 @@ export default function (endpoint, storeKey) {
   return {
     fetch,
     reset,
-    setFilter,
+    setFilter: filter => setFilter.trigger(filter),
     sagas,
     reducer,
     selectors,
